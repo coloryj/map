@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f6f4" />
+    <meta
+      name="description"
+      content="경찰청의 2024년 전국 범죄 발생 지역별 통계를 유형별로 살펴보는 범죄 안전 지도입니다."
+    />
+    <title>위험할지도 — 전국 범죄 안전 현황</title>
+    <link rel="icon" type="image/svg+xml" href="siren.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="vendor/leaflet.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="위험할지도 홈">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none">
+            <path d="M24 4v5M8.8 10.2l3.6 3.6M39.2 10.2l-3.6 3.6" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+            <path d="M12 29a12 12 0 0 1 24 0v5H12v-5Z" fill="currentColor" />
+            <path d="M9 34h30v4a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3v-4Z" fill="#343c3a" />
+            <path d="M20 20a7 7 0 0 0-4 6" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity=".8" />
+          </svg>
+        </span>
+        <span class="brand-copy"><strong>위험할지도</strong><small>CRIME SAFETY MAP</small></span>
+      </a>
+      <nav class="top-nav" aria-label="주요 메뉴">
+        <a class="nav-link is-active" href="#overview">범죄 지도</a>
+        <a class="nav-link" href="#districts">지역별 현황</a>
+      </nav>
+      <div class="top-actions">
+        <label class="search-box">
+          <span aria-hidden="true" class="search-icon"></span>
+          <input id="search-input" type="search" placeholder="시·도 또는 시군구 검색" autocomplete="off" />
+          <kbd>Ctrl K</kbd>
+        </label>
+        <label class="upload-button" for="csv-file">
+          <span aria-hidden="true">＋</span> CSV 불러오기
+          <input id="csv-file" type="file" accept=".csv,text/csv" />
+        </label>
+      </div>
+    </header>
+
+    <main class="dashboard" id="overview">
+      <section class="intro-row">
+        <div>
+          <div class="eyebrow"><span class="live-dot"></span>대한민국 · 전국 범죄 통계</div>
+          <h1>숫자로 살펴보는 우리 동네 안전</h1>
+          <p>경찰청 범죄 발생 통계를 시·도와 시군구, 범죄 유형별로 확인해 보세요.</p>
+        </div>
+        <div class="dataset-badge">
+          <span class="dataset-icon" aria-hidden="true">▤</span>
+          <span><strong id="data-year">2024년 통계</strong><small id="data-source">경찰청 범죄 발생 지역별 통계</small></span>
+          <span class="source-status" aria-label="CSV 자료 불러옴"></span>
+        </div>
+      </section>
+
+      <section class="stats-grid" aria-label="전국 범죄 통계 요약">
+        <article class="stat-card primary-stat">
+          <span class="stat-label" id="total-label">전국 발생 건수</span>
+          <div class="stat-value" id="total-count">-</div>
+          <span class="stat-footnote">CSV에 수록된 국내 범죄 유형 합계</span>
+          <span class="stat-accent accent-green" aria-hidden="true">↗</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">가장 많은 유형</span>
+          <div class="stat-value" id="top-category">-</div>
+          <span class="stat-footnote" id="top-category-caption">전국 전체 유형별 합계</span>
+          <span class="stat-accent accent-coral" aria-hidden="true">◈</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label" id="top-district-label">발생 건수 최다 시·도</span>
+          <div class="stat-value" id="top-district">-</div>
+          <span class="stat-footnote" id="top-district-caption">시·도별 총 발생 건수</span>
+          <span class="stat-accent accent-gold" aria-hidden="true">⌖</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">통계 적용 범위</span>
+          <div class="stat-value">전국 <span>17개 시·도</span></div>
+          <span class="stat-footnote">시·도별 집계 위치 기준</span>
+          <span class="stat-accent accent-blue" aria-hidden="true">◷</span>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <section class="map-card" aria-label="전국 범죄 유형별 지도">
+          <div class="map-toolbar">
+            <div class="map-heading">
+              <span class="map-heading-icon" aria-hidden="true">⌖</span>
+              <span><strong>전국 지역별 현황</strong><small id="map-result-label">시군구·국가별 집계 위치</small></span>
+            </div>
+            <div class="map-actions">
+              <span class="map-period" id="map-period">2024년 연간</span>
+              <button class="map-control" id="reset-map-button" type="button">전체 보기</button>
+              <button class="map-control zoom-control" id="zoom-in-button" type="button" aria-label="지도 확대">＋</button>
+              <button class="map-control zoom-control" id="zoom-out-button" type="button" aria-label="지도 축소">−</button>
+            </div>
+          </div>
+          <div class="map-canvas" id="map" role="application" aria-label="대한민국 시군구·국가별 범죄 통계 지도"></div>
+          <div class="map-status" id="map-status" role="status" aria-live="polite" hidden>
+            기본 지도 타일을 불러오지 못해 지역별 집계 위치만 표시합니다.
+          </div>
+          <div class="map-legend" id="map-legend">
+            <span class="legend-title">유형</span>
+          </div>
+          <div class="map-disclaimer">
+            <span aria-hidden="true">ⓘ</span>
+            마커는 CSV의 지역별 집계 위치입니다. 군집을 누르거나 확대하면 개별 지역을 볼 수 있습니다.
+          </div>
+        </section>
+
+        <aside class="district-panel" id="districts" aria-label="지역별 통계 및 범죄 유형 필터">
+          <div class="panel-heading">
+            <div><h2 id="district-heading">전체 지역 현황</h2><p id="district-subheading">CSV에 포함된 시군구·국가별 통계입니다.</p></div>
+            <span class="result-count" id="result-count">247개 지역</span>
+          </div>
+          <label class="region-picker"><span>지역 선택</span><select id="region-select" aria-label="지역 선택"><option value="">전체 지역</option></select></label>
+          <div class="filter-heading">
+            <span>범죄 유형</span>
+            <button class="text-button" id="toggle-all-button" type="button">전체 해제</button>
+          </div>
+          <div class="type-list" id="type-filters"></div>
+          <div class="district-list-heading"><strong id="list-heading">시군구·국가 순위</strong><span>선택 유형 합계</span></div>
+          <div class="district-list" id="district-list"></div>
+        </aside>
+      </section>
+
+      <section class="data-guide" id="data-guide">
+        <strong>데이터와 지도 읽기</strong>
+        <p>자료: <span id="guide-source">경찰청 범죄 발생 지역별 통계, 2024년</span>. 국내 시군구 좌표는 통계청 통계지리정보서비스 2018 시군구 경계 자료의 중심을 이용한 집계 위치이며 개별 사건 발생 지점을 나타내지 않습니다. 지도 경계 자료는 통계청 공공누리 제1유형 자료(출처: 통계청 SGIS, 2018)를 이용했습니다. 해외 국가는 국가별 대표 위치에 표시합니다. 마커가 겹치는 경우 군집을 누르거나 확대해 개별 지역을 확인할 수 있습니다.</p>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="vendor/leaflet.js"></script>
+    <script src="vendor/leaflet.markercluster.js"></script>
+    <script src="crime-data.js"></script>
+    <script src="location-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
